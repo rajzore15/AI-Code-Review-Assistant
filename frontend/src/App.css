@@ -1,38 +1,76 @@
-.App {
-  text-align: center;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body{
+background:#111827;
+color:white;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.app{
+padding:30px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+header{
+text-align:center;
+margin-bottom:30px;
 }
 
-.App-link {
-  color: #61dafb;
+.container{
+display:flex;
+gap:20px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.left{
+width:50%;
+display:flex;
+flex-direction:column;
+}
+
+.right{
+width:50%;
+background:#1f2937;
+padding:20px;
+border-radius:10px;
+}
+
+select{
+padding:10px;
+margin-bottom:15px;
+background:#374151;
+color:white;
+border:none;
+border-radius:8px;
+}
+
+.monaco-editor{
+border-radius:10px;
+overflow:hidden;
+}
+
+button{
+margin-top:15px;
+padding:15px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:10px;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+.result{
+margin-top:20px;
+background:#111827;
+padding:20px;
+border-radius:10px;
+height:500px;
+overflow:auto;
 }
