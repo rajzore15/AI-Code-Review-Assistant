@@ -1,6 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 app = FastAPI(
     title="AI Code Review Assistant API",
@@ -15,18 +26,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class CodeRequest(BaseModel):
     code: str
     language: str
+
 
 @app.get("/")
 def home():
     return {"message": "Welcome to AI Code Review Assistant Backend 🚀"}
 
+
 @app.post("/review")
 def review_code(request: CodeRequest):
-    return {
-        "language": request.language,
-        "review": "Backend connected successfully! AI integration will be added in Day 3.",
-        "code_length": len(request.code)
-    }
+    prompt = f"""
+You are an expert code reviewer.
+
+Language: {request.language}
+
+Review the following code.
+
+Give:
+1. Errors
+2. Improvements
+3. Best Practices
+4. Optimized Version (if needed)
+
+Code:
+{request.code}
+"""
+
+    try:
+        response = model.generate_content(prompt)
+
+        return {
+            "language": request.language,
+            "review": response.text,
+             "code_length": len(request.code)
+        }
+
+    except Exception as e:
+        return {
+            "error": str(e)
+        }
