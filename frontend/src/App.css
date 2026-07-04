@@ -74,3 +74,38 @@ border-radius:10px;
 height:500px;
 overflow:auto;
 }
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.clear-btn {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.clear-btn:hover {
+  background: #e60000;
+}
+
+.copy-btn {
+  background: #00b894;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.copy-btn:hover {
+  background: #009970;
+}
