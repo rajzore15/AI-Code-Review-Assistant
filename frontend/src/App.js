@@ -5,6 +5,7 @@ import axios from "axios";
 import ClipLoader from "react-spinners/ClipLoader";
 import toast, { Toaster } from "react-hot-toast";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import jsPDF from "jspdf";
 
 function App() {
   const [language, setLanguage] = useState("python");
@@ -52,13 +53,55 @@ Code Length: ${response.data.code_length} characters`
     toast.success("Editor Cleared!");
   };
 
+  // Download PDF
+  const downloadPDF = () => {
+    if (result === "AI review will appear here...") {
+      toast.error("No review available to download!");
+      return;
+    }
+
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("AI Code Review Report", 20, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+
+    const lines = doc.splitTextToSize(result, 170);
+    doc.text(lines, 20, 35);
+
+    doc.save("AI_Code_Review_Report.pdf");
+
+    toast.success("PDF Downloaded!");
+  };
+
   return (
     <div className="app">
       <Toaster position="top-right" />
 
       <header>
         <h1>🤖 AI Code Review Assistant</h1>
+        <p>Analyze your code instantly using Google's Gemini AI</p>
       </header>
+
+      <div className="stats">
+        <div className="card">
+          <h3>Language</h3>
+          <p>{language.toUpperCase()}</p>
+        </div>
+
+        <div className="card">
+          <h3>Characters</h3>
+          <p>{code.length}</p>
+        </div>
+
+        <div className="card">
+          <h3>Status</h3>
+          <p>{loading ? "Analyzing..." : "Ready ✅"}</p>
+        </div>
+      </div>
 
       <div className="container">
         <div className="left">
@@ -92,6 +135,14 @@ Code Length: ${response.data.code_length} characters`
             >
               🗑 Clear
             </button>
+
+            <button
+              onClick={downloadPDF}
+              className="pdf-btn"
+              disabled={loading}
+            >
+              📄 Download PDF
+            </button>
           </div>
         </div>
 
@@ -123,6 +174,10 @@ Code Length: ${response.data.code_length} characters`
           </div>
         </div>
       </div>
+
+      <footer className="footer">
+        <p>Developed by <strong>Raj Zore</strong> | AI Code Review Assistant © 2026</p>
+      </footer>
     </div>
   );
 }
