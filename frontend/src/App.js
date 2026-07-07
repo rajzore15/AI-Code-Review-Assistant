@@ -77,6 +77,39 @@ Code Length: ${response.data.code_length} characters`
     toast.success("PDF Downloaded!");
   };
 
+  // Upload File
+const uploadFile = (event) => {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const extension = file.name.split(".").pop().toLowerCase();
+
+  const languageMap = {
+    py: "python",
+    js: "javascript",
+    java: "java",
+    cpp: "cpp",
+    txt: language,
+  };
+
+  if (!languageMap[extension]) {
+    toast.error("Unsupported file type!");
+    return;
+  }
+
+  setLanguage(languageMap[extension]);
+
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    setCode(e.target.result);
+    toast.success("File uploaded successfully!");
+  };
+
+  reader.readAsText(file);
+};
+
   return (
     <div className="app">
       <Toaster position="top-right" />
@@ -123,6 +156,16 @@ Code Length: ${response.data.code_length} characters`
             onChange={(value) => setCode(value || "")}
           />
 
+          <label className="upload-btn">
+            📂 Upload File
+              <input
+                type="file"
+                accept=".py,.js,.java,.cpp,.txt"
+                onChange={uploadFile}
+                hidden
+              />
+            </label>
+
           <div className="button-group">
             <button onClick={analyzeCode} disabled={loading}>
               {loading ? "Analyzing..." : "Analyze Code"}
@@ -143,8 +186,12 @@ Code Length: ${response.data.code_length} characters`
             >
               📄 Download PDF
             </button>
+
+            
           </div>
         </div>
+
+        
 
         <div className="right">
           <h2>Analysis Result</h2>
