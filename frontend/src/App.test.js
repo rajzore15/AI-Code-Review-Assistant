@@ -14,3 +14,16 @@ test('toggles the review history sidebar', async () => {
   await userEvent.click(toggleButton);
   expect(screen.queryByText(/review history/i)).not.toBeInTheDocument();
 });
+
+test('toggles the app theme from dark to light', async () => {
+  render(<App />);
+
+  const themeButton = screen.getByRole('button', { name: /toggle dark mode/i });
+  const appRoot = document.querySelector('.app');
+
+  expect(appRoot).toHaveAttribute('data-theme', 'dark');
+
+  await userEvent.click(themeButton);
+
+  expect(appRoot).toHaveAttribute('data-theme', 'light');
+});
