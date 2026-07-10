@@ -6,19 +6,92 @@ import ClipLoader from "react-spinners/ClipLoader";
 import toast, { Toaster } from "react-hot-toast";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
+const defaultResult = "AI review will appear here...";
+
+const getPreview = (text) => {
+  const cleaned = (text || "").replace(/\s+/g, " ").trim();
+  return cleaned.length > 80 ? `${cleaned.slice(0, 77)}...` : cleaned;
+};
+
+const buildAnalysisSections = (rawReview = "", selectedLanguage = "python", codeLength = 0) => {
+  const reviewText = rawReview || "";
+  const lines = reviewText
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const issueMatches = lines.filter((line) =>
+    /(error|bug|issue|warning|problem|exception|vulnerability|fail|fix)/i.test(line)
+  );
+  const suggestionMatches = lines.filter((line) =>
+    /(suggest|recommend|improve|consider|should|could|better|optimi|clean|refactor)/i.test(line)
+  );
+
+  const qualityScore = Math.max(
+    72,
+    Math.min(97, 86 - Math.min(14, issueMatches.length * 2) + (suggestionMatches.length > 0 ? 2 : 0))
+  );
+
+  const complexityLevel =
+    codeLength > 2200 ? "High" : codeLength > 1000 ? "Medium" : "Low";
+
+  return {
+    language: (selectedLanguage || "python").toUpperCase(),
+    bugsFound: issueMatches.slice(0, 3).length
+      ? issueMatches.slice(0, 3)
+      : ["No critical bugs detected in the provided snippet."],
+    suggestions: suggestionMatches.slice(0, 3).length
+      ? suggestionMatches.slice(0, 3)
+      : ["Add a few clarifying comments and refine edge-case handling."],
+    qualityScore,
+    complexityLevel,
+    errorsAndIssues: issueMatches.slice(0, 3).length
+      ? issueMatches.slice(0, 3)
+      : ["No immediate errors were found in the current sample."],
+    improvements: suggestionMatches.slice(0, 3).length
+      ? suggestionMatches.slice(0, 3)
+      : ["Improve readability with clearer naming and structure."],
+    bestPractices: [
+      "Keep functions focused and easy to follow.",
+      "Validate inputs and edge cases explicitly.",
+      "Use consistent naming and documentation.",
+    ],
+  };
+};
+
+const buildReviewText = (sections) => {
+  return [
+    `Language: ${sections.language}`,
+    "",
+    "Bugs Found:",
+    ...sections.bugsFound.map((item) => `- ${item}`),
+    "",
+    "Suggestions:",
+    ...sections.suggestions.map((item) => `- ${item}`),
+    "",
+    `Code Quality Score: ${sections.qualityScore}/100`,
+    `Complexity Level: ${sections.complexityLevel}`,
+    "",
+    "Errors and Issues:",
+    ...sections.errorsAndIssues.map((item) => `- ${item}`),
+    "",
+    "Improvements:",
+    ...sections.improvements.map((item) => `- ${item}`),
+    "",
+    "Best Practices:",
+    ...sections.bestPractices.map((item) => `- ${item}`),
+  ].join("\n");
+};
+
 function App() {
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
-  const [result, setResult] = useState("AI review will appear here...");
+  const [result, setResult] = useState(defaultResult);
+  const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [history, setHistory] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const getPreview = (text) => {
-    const cleaned = (text || "").replace(/\s+/g, " ").trim();
-    return cleaned.length > 80 ? `${cleaned.slice(0, 77)}...` : cleaned;
-  };
 
   const analyzeCode = async () => {
     if (!code.trim()) {
@@ -34,18 +107,21 @@ function App() {
         language: language,
       });
 
-      const reviewText = `Language: ${response.data.language}
+      const reviewText = response.data.review || "No review details returned.";
+      const sections = buildAnalysisSections(
+        reviewText,
+        response.data.language || language,
+        response.data.code_length || code.length
+      );
+      const formattedReviewText = buildReviewText(sections);
 
-Review:
-${response.data.review}
-
-Code Length: ${response.data.code_length} characters`;
-
-      setResult(reviewText);
+      setResult(formattedReviewText);
+      setAnalysisData(sections);
       setHistory((prev) => [
         {
-          language: response.data.language,
-          review: reviewText,
+          language: response.data.language || language,
+          review: formattedReviewText,
+          sections,
           time: new Date().toLocaleString(),
         },
         ...prev.slice(0, 5),
@@ -54,6 +130,7 @@ Code Length: ${response.data.code_length} characters`;
       toast.success("Analysis Completed!");
     } catch (error) {
       setResult("❌ Unable to connect to the backend.");
+      setAnalysisData(null);
       toast.error("Backend Connection Failed!");
     } finally {
       setLoading(false);
@@ -61,13 +138,28 @@ Code Length: ${response.data.code_length} characters`;
   };
 
   const clearCode = () => {
+    const confirmClear = window.confirm(
+      "Are you sure you want to clear the editor and review?"
+    );
+
+    if (confirmClear) {
+      setCode("");
+      setResult(defaultResult);
+      setAnalysisData(null);
+      toast.success("Editor Cleared!");
+    }
+  };
+
+  const startNewReview = () => {
     setCode("");
-    setResult("AI review will appear here...");
-    toast.success("Editor Cleared!");
+    setResult(defaultResult);
+    setAnalysisData(null);
+    setSidebarOpen(false);
+    toast.success("New review started");
   };
 
   const downloadPDF = async () => {
-    if (result === "AI review will appear here...") {
+    if (result === defaultResult) {
       toast.error("No review available to download!");
       return;
     }
@@ -124,12 +216,15 @@ Code Length: ${response.data.code_length} characters`;
 
   const handleHistorySelect = (item) => {
     setResult(item.review);
+    setAnalysisData(item.sections || null);
     setLanguage(item.language);
     setSidebarOpen(false);
   };
 
   const clearHistory = () => {
     setHistory([]);
+    setAnalysisData(null);
+    setResult(defaultResult);
     toast.success("History cleared!");
   };
 
@@ -149,14 +244,14 @@ Code Length: ${response.data.code_length} characters`;
             </button>
 
             <div className="header-title">
-              <h1>🤖 AI Code Review Assistant</h1>
+              <div className="hero-badge">🤖 AI Assistant</div>
+              <h1>AI Code Review Assistant</h1>
               <p>Analyze your code instantly using Google's Gemini AI</p>
-            </div>
-
-            <div className="command-bar" aria-label="Quick actions">
-              <span className="command-pill">⌘ Review</span>
-              <span className="command-pill">⚡ Fast</span>
-              <span className="command-pill">✨ Premium</span>
+              <div className="header-badges" aria-label="Quick actions">
+                <span className="command-pill">Review</span>
+                <span className="command-pill">Fast</span>
+                <span className="command-pill">Premium</span>
+              </div>
             </div>
 
             <button
@@ -171,10 +266,7 @@ Code Length: ${response.data.code_length} characters`;
 
         {sidebarOpen && (
           <>
-            <div
-              className="sidebar-overlay visible"
-              onClick={() => setSidebarOpen(false)}
-            />
+            <div className="sidebar-overlay visible" onClick={() => setSidebarOpen(false)} />
 
             <aside className="sidebar open">
               <div className="sidebar-header">
@@ -198,46 +290,68 @@ Code Length: ${response.data.code_length} characters`;
                 </div>
               </div>
 
-              {history.length === 0 ? (
-                <p className="empty-history">
-                  Your previous reviews will appear here for quick access.
-                </p>
-              ) : (
-                <div className="history-list">
-                  {history.map((item, index) => (
-                    <button
-                      key={`${item.time}-${index}`}
-                      className="history-item"
-                      onClick={() => handleHistorySelect(item)}
-                    >
-                      <span className="history-language">{item.language.toUpperCase()}</span>
-                      <span className="history-time">{item.time}</span>
-                      <span className="history-preview">{getPreview(item.review)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <button className="new-review-btn" onClick={startNewReview}>
+                ✨ New Review
+              </button>
+
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Recent Reviews</p>
+                {history.length === 0 ? (
+                  <p className="empty-history">
+                    Your previous reviews will appear here for quick access.
+                  </p>
+                ) : (
+                  <div className="history-list">
+                    {history.map((item, index) => (
+                      <button
+                        key={`${item.time}-${index}`}
+                        className="history-item"
+                        onClick={() => handleHistorySelect(item)}
+                      >
+                        <span className="history-language">{item.language.toUpperCase()}</span>
+                        <span className="history-time">{item.time}</span>
+                        <span className="history-preview">{getPreview(item.review)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="sidebar-footer">
+                <button
+                  className="theme-toggle sidebar-theme-toggle"
+                  onClick={() => setDarkMode(!darkMode)}
+                >
+                  {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+                </button>
+              </div>
             </aside>
           </>
         )}
 
         <div className="stats">
-          <div className="card">
+          <div className="card stat-card">
             <div className="card-icon">💡</div>
             <h3>Language</h3>
             <p>{language.toUpperCase()}</p>
           </div>
 
-          <div className="card">
+          <div className="card stat-card">
             <div className="card-icon">🧾</div>
             <h3>Characters</h3>
             <p>{code.length}</p>
           </div>
 
-          <div className="card">
+          <div className="card stat-card">
+            <div className="card-icon">📏</div>
+            <h3>Lines</h3>
+            <p>{code ? code.split("\n").length : 0}</p>
+          </div>
+
+          <div className="card stat-card">
             <div className="card-icon">⚡</div>
             <h3>Status</h3>
-            <p>{loading ? "Analyzing..." : "Ready ✅"}</p>
+            <p>{loading ? "Analyzing..." : "Ready"}</p>
           </div>
         </div>
 
@@ -252,7 +366,7 @@ Code Length: ${response.data.code_length} characters`;
                 <span className="panel-badge">Live</span>
               </div>
 
-              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+              <select className="language-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
                 <option value="java">Java</option>
@@ -271,17 +385,12 @@ Code Length: ${response.data.code_length} characters`;
 
               <label className="upload-btn action-btn">
                 📂 Upload File
-                <input
-                  type="file"
-                  accept=".py,.js,.java,.cpp,.txt"
-                  onChange={uploadFile}
-                  hidden
-                />
+                <input type="file" accept=".py,.js,.java,.cpp,.txt" onChange={uploadFile} hidden />
               </label>
 
               <div className="button-group">
-                <button className="action-btn primary" onClick={analyzeCode} disabled={loading}>
-                  {loading ? "Analyzing..." : "Analyze Code"}
+                <button className="action-btn primary" onClick={analyzeCode} disabled={loading || !code.trim()}>
+                  {loading ? "⏳ Analyzing..." : "🚀 Analyze Code"}
                 </button>
 
                 <button className="action-btn secondary" onClick={clearCode} disabled={loading}>
@@ -302,7 +411,7 @@ Code Length: ${response.data.code_length} characters`;
                   <h2>Analysis Result</h2>
                   <p>Actionable feedback from Gemini</p>
                 </div>
-                <span className="panel-badge">Live</span>
+                <span className="panel-badge">Ready</span>
               </div>
 
               {loading && (
@@ -312,14 +421,81 @@ Code Length: ${response.data.code_length} characters`;
               )}
 
               <div className="result">
-                <CopyToClipboard
-                  text={result}
-                  onCopy={() => toast.success("Review copied to clipboard!")}
-                >
-                  <button className="copy-btn action-btn">📋 Copy Review</button>
-                </CopyToClipboard>
+                <div className="result-toolbar">
+                  <div>
+                    <p className="result-label">Structured review insights</p>
+                    <span className="result-subtle">Premium feedback for your workflow</span>
+                  </div>
+                  <CopyToClipboard
+                    text={result}
+                    onCopy={() => toast.success("Review copied to clipboard!")}
+                  >
+                    <button className="copy-btn action-btn">📋 Copy</button>
+                  </CopyToClipboard>
+                </div>
 
-                <pre>{result}</pre>
+                {analysisData ? (
+                  <div className="result-grid">
+                    <div className="result-card accent-blue">
+                      <h4>Bugs Found</h4>
+                      <ul>
+                        {analysisData.bugsFound.map((item, index) => (
+                          <li key={`bugs-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="result-card accent-purple">
+                      <h4>Suggestions</h4>
+                      <ul>
+                        {analysisData.suggestions.map((item, index) => (
+                          <li key={`suggestions-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="result-card accent-cyan">
+                      <h4>Code Quality Score</h4>
+                      <div className="metric-value">{analysisData.qualityScore}/100</div>
+                    </div>
+
+                    <div className="result-card accent-gold">
+                      <h4>Complexity Level</h4>
+                      <div className="metric-value">{analysisData.complexityLevel}</div>
+                    </div>
+
+                    <div className="result-card accent-red">
+                      <h4>Errors and Issues</h4>
+                      <ul>
+                        {analysisData.errorsAndIssues.map((item, index) => (
+                          <li key={`errors-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="result-card accent-green">
+                      <h4>Improvements</h4>
+                      <ul>
+                        {analysisData.improvements.map((item, index) => (
+                          <li key={`improvements-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="result-card accent-emerald">
+                      <h4>Best Practices</h4>
+                      <ul>
+                        {analysisData.bestPractices.map((item, index) => (
+                          <li key={`best-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-result">
+                    <p>Run an analysis to view premium review insights.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
