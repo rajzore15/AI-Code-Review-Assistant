@@ -383,22 +383,20 @@ function App() {
                 />
               </div>
 
-              <label className="upload-btn action-btn">
-                📂 Upload File
-                <input type="file" accept=".py,.js,.java,.cpp,.txt" onChange={uploadFile} hidden />
-              </label>
-
-              <div className="button-group">
-                <button className="action-btn primary" onClick={analyzeCode} disabled={loading || !code.trim()}>
+              <div className="editor-action-row">
+                <button className="action-btn primary analyze-panel-btn" onClick={analyzeCode} disabled={loading || !code.trim()}>
                   {loading ? "⏳ Analyzing..." : "🚀 Analyze Code"}
                 </button>
+              </div>
 
-                <button className="action-btn secondary" onClick={clearCode} disabled={loading}>
+              <div className="button-row secondary-actions">
+                <label className="upload-btn action-btn secondary toolbar-btn">
+                  📂 Upload File
+                  <input type="file" accept=".py,.js,.java,.cpp,.txt" onChange={uploadFile} hidden />
+                </label>
+
+                <button className="action-btn secondary toolbar-btn" onClick={clearCode} disabled={loading}>
                   🗑 Clear
-                </button>
-
-                <button className="action-btn accent" onClick={downloadPDF} disabled={loading}>
-                  📄 Download PDF
                 </button>
               </div>
             </div>
@@ -426,13 +424,19 @@ function App() {
                     <p className="result-label">Structured review insights</p>
                     <span className="result-subtle">Premium feedback for your workflow</span>
                   </div>
+                  <div className="result-toolbar-actions">
                   <CopyToClipboard
                     text={result}
                     onCopy={() => toast.success("Review copied to clipboard!")}
                   >
-                    <button className="copy-btn action-btn">📋 Copy</button>
+                    <button className="copy-btn action-btn toolbar-btn">📋 Copy</button>
                   </CopyToClipboard>
+
+                  <button className="action-btn secondary toolbar-btn" onClick={downloadPDF} disabled={result === defaultResult}>
+                    ⬇️ Download
+                  </button>
                 </div>
+              </div>
 
                 {analysisData ? (
                   <div className="result-grid">
