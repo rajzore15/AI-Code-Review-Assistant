@@ -228,8 +228,21 @@ function App() {
     toast.success("History cleared!");
   };
 
+  const qualityScoreDisplay = analysisData ? (analysisData.qualityScore / 10).toFixed(1) : "0.0";
+  const bugsSummary = analysisData?.bugsFound?.length ? analysisData.bugsFound.length : 0;
+  const suggestionCount = analysisData?.suggestions?.length ? analysisData.suggestions.length : 0;
+  const improvementCount = analysisData?.improvements?.length ? analysisData.improvements.length : 0;
+  const bestPracticeCount = analysisData?.bestPractices?.length ? analysisData.bestPractices.length : 0;
+  const securitySuggestions = analysisData
+    ? [
+        "Review secrets handling and credential exposure.",
+        "Validate inputs before execution.",
+        "Ensure authorization checks are in place.",
+      ]
+    : ["Run an analysis to surface security-focused suggestions."];
+
   return (
-    <div className="app" data-theme={darkMode ? "dark" : "light"}>
+    <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`} data-theme={darkMode ? "dark" : "light"}>
       <Toaster position="top-right" />
 
       <div className="app-shell">
@@ -377,7 +390,7 @@ function App() {
                 <Editor
                   height="500px"
                   language={language}
-                  theme="vs-dark"
+                  theme={darkMode ? "vs-dark" : "vs-light"}
                   value={code}
                   onChange={(value) => setCode(value || "")}
                 />
@@ -419,57 +432,55 @@ function App() {
               )}
 
               <div className="result">
+                <div className="result-header">
+                  <div className="result-header-top">
+                    <div>
+                      <p className="result-eyebrow">AI Review Results</p>
+                      <h3>Context-aware feedback tailored to your code</h3>
+                    </div>
+                    <div className="result-badges">
+                      <span className="result-badge score-badge">
+                        {analysisData ? `${qualityScoreDisplay}/10` : "—"}
+                      </span>
+                      <span className="result-badge complexity-badge">
+                        {analysisData ? analysisData.complexityLevel : "—"}
+                      </span>
+                      <span className="result-badge issue-badge">{bugsSummary} Bugs</span>
+                      <span className="result-badge suggestion-badge">{suggestionCount} Suggestions</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="result-toolbar">
                   <div>
                     <p className="result-label">Structured review insights</p>
-                    <span className="result-subtle">Premium feedback for your workflow</span>
+                    <span className="result-subtle">Premium guidance designed for faster iteration.</span>
                   </div>
                   <div className="result-toolbar-actions">
-                  <CopyToClipboard
-                    text={result}
-                    onCopy={() => toast.success("Review copied to clipboard!")}
-                  >
-                    <button className="copy-btn action-btn toolbar-btn">📋 Copy</button>
-                  </CopyToClipboard>
+                    <CopyToClipboard
+                      text={result}
+                      onCopy={() => toast.success("Review copied to clipboard!")}
+                    >
+                      <button className="review-action-btn copy-btn action-btn toolbar-btn">📋 Copy</button>
+                    </CopyToClipboard>
 
-                  <button className="action-btn secondary toolbar-btn" onClick={downloadPDF} disabled={result === defaultResult}>
-                    ⬇️ Download
-                  </button>
+                    <button
+                      className="review-action-btn action-btn secondary toolbar-btn"
+                      onClick={downloadPDF}
+                      disabled={result === defaultResult}
+                    >
+                      ⬇️ Download
+                    </button>
+                  </div>
                 </div>
-              </div>
 
                 {analysisData ? (
                   <div className="result-grid">
-                    <div className="result-card accent-blue">
-                      <h4>Bugs Found</h4>
-                      <ul>
-                        {analysisData.bugsFound.map((item, index) => (
-                          <li key={`bugs-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="result-card accent-purple">
-                      <h4>Suggestions</h4>
-                      <ul>
-                        {analysisData.suggestions.map((item, index) => (
-                          <li key={`suggestions-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="result-card accent-cyan">
-                      <h4>Code Quality Score</h4>
-                      <div className="metric-value">{analysisData.qualityScore}/100</div>
-                    </div>
-
-                    <div className="result-card accent-gold">
-                      <h4>Complexity Level</h4>
-                      <div className="metric-value">{analysisData.complexityLevel}</div>
-                    </div>
-
                     <div className="result-card accent-red">
-                      <h4>Errors and Issues</h4>
+                      <div className="result-card-header">
+                        <span className="result-card-icon">🐞</span>
+                        <h4>Errors & Issues</h4>
+                      </div>
                       <ul>
                         {analysisData.errorsAndIssues.map((item, index) => (
                           <li key={`errors-${index}`}>{item}</li>
@@ -477,8 +488,11 @@ function App() {
                       </ul>
                     </div>
 
-                    <div className="result-card accent-green">
-                      <h4>Improvements</h4>
+                    <div className="result-card accent-blue">
+                      <div className="result-card-header">
+                        <span className="result-card-icon">🚀</span>
+                        <h4>Improvements</h4>
+                      </div>
                       <ul>
                         {analysisData.improvements.map((item, index) => (
                           <li key={`improvements-${index}`}>{item}</li>
@@ -486,18 +500,35 @@ function App() {
                       </ul>
                     </div>
 
-                    <div className="result-card accent-emerald">
-                      <h4>Best Practices</h4>
+                    <div className="result-card accent-green">
+                      <div className="result-card-header">
+                        <span className="result-card-icon">✅</span>
+                        <h4>Best Practices</h4>
+                      </div>
                       <ul>
                         {analysisData.bestPractices.map((item, index) => (
                           <li key={`best-${index}`}>{item}</li>
                         ))}
                       </ul>
                     </div>
+
+                    <div className="result-card accent-orange">
+                      <div className="result-card-header">
+                        <span className="result-card-icon">🛡️</span>
+                        <h4>Security Suggestions</h4>
+                      </div>
+                      <ul>
+                        {securitySuggestions.map((item, index) => (
+                          <li key={`security-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 ) : (
                   <div className="empty-result">
-                    <p>Run an analysis to view premium review insights.</p>
+                    <div className="empty-result-illustration">🤖</div>
+                    <h4>Ready for an AI review</h4>
+                    <p>Run an analysis to receive AI-powered code insights.</p>
                   </div>
                 )}
               </div>

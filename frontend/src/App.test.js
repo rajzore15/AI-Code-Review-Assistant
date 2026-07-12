@@ -22,8 +22,20 @@ test('toggles the app theme from dark to light', async () => {
   const appRoot = document.querySelector('.app');
 
   expect(appRoot).toHaveAttribute('data-theme', 'dark');
+  expect(appRoot).toHaveClass('dark-theme');
 
   await userEvent.click(themeButton);
 
   expect(appRoot).toHaveAttribute('data-theme', 'light');
+  expect(appRoot).toHaveClass('light-theme');
+});
+
+test('renders copy and download buttons with matching shared action styling', () => {
+  render(<App />);
+
+  const copyButton = screen.getByRole('button', { name: /copy/i });
+  const downloadButton = screen.getByRole('button', { name: /download/i });
+
+  expect(copyButton).toHaveClass('review-action-btn');
+  expect(downloadButton).toHaveClass('review-action-btn');
 });
