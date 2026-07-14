@@ -13,6 +13,22 @@ const getPreview = (text) => {
   return cleaned.length > 80 ? `${cleaned.slice(0, 77)}...` : cleaned;
 };
 
+const getLanguageLabel = (value) => {
+  const normalized = (value || "python").toLowerCase();
+
+  switch (normalized) {
+    case "javascript":
+      return "🟨 JavaScript";
+    case "java":
+      return "☕ Java";
+    case "cpp":
+      return "⚙️ C++";
+    case "python":
+    default:
+      return "🐍 Python";
+  }
+};
+
 const buildAnalysisSections = (rawReview = "", selectedLanguage = "python", codeLength = 0) => {
   const reviewText = rawReview || "";
   const lines = reviewText
@@ -229,10 +245,9 @@ function App() {
   };
 
   const qualityScoreDisplay = analysisData ? (analysisData.qualityScore / 10).toFixed(1) : "0.0";
+  const currentLanguageLabel = getLanguageLabel(language);
   const bugsSummary = analysisData?.bugsFound?.length ? analysisData.bugsFound.length : 0;
   const suggestionCount = analysisData?.suggestions?.length ? analysisData.suggestions.length : 0;
-  const improvementCount = analysisData?.improvements?.length ? analysisData.improvements.length : 0;
-  const bestPracticeCount = analysisData?.bestPractices?.length ? analysisData.bestPractices.length : 0;
   const securitySuggestions = analysisData
     ? [
         "Review secrets handling and credential exposure.",
@@ -321,7 +336,7 @@ function App() {
                         className="history-item"
                         onClick={() => handleHistorySelect(item)}
                       >
-                        <span className="history-language">{item.language.toUpperCase()}</span>
+                        <span className="history-language">{getLanguageLabel(item.language)}</span>
                         <span className="history-time">{item.time}</span>
                         <span className="history-preview">{getPreview(item.review)}</span>
                       </button>
@@ -346,7 +361,7 @@ function App() {
           <div className="card stat-card">
             <div className="card-icon">💡</div>
             <h3>Language</h3>
-            <p>{language.toUpperCase()}</p>
+            <p>{currentLanguageLabel}</p>
           </div>
 
           <div className="card stat-card">
@@ -380,15 +395,15 @@ function App() {
               </div>
 
               <select className="language-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
+                <option value="python">🐍 Python</option>
+                <option value="javascript">🟨 JavaScript</option>
+                <option value="java">☕ Java</option>
+                <option value="cpp">⚙️ C++</option>
               </select>
 
               <div className="editor-shell">
                 <Editor
-                  height="500px"
+                  height="650px"
                   language={language}
                   theme={darkMode ? "vs-dark" : "vs-light"}
                   value={code}
@@ -425,111 +440,120 @@ function App() {
                 <span className="panel-badge">Ready</span>
               </div>
 
-              {loading && (
-                <div className="loader">
-                  <ClipLoader size={45} color="#60a5fa" />
-                </div>
-              )}
-
               <div className="result">
-                <div className="result-header">
-                  <div className="result-header-top">
-                    <div>
-                      <p className="result-eyebrow">AI Review Results</p>
-                      <h3>Context-aware feedback tailored to your code</h3>
+                {loading ? (
+                  <div className="analysis-loading-state">
+                    <div className="loading-orb">
+                      <ClipLoader size={44} color="#60a5fa" />
                     </div>
-                    <div className="result-badges">
-                      <span className="result-badge score-badge">
-                        {analysisData ? `${qualityScoreDisplay}/10` : "—"}
-                      </span>
-                      <span className="result-badge complexity-badge">
-                        {analysisData ? analysisData.complexityLevel : "—"}
-                      </span>
-                      <span className="result-badge issue-badge">{bugsSummary} Bugs</span>
-                      <span className="result-badge suggestion-badge">{suggestionCount} Suggestions</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="result-toolbar">
-                  <div>
-                    <p className="result-label">Structured review insights</p>
-                    <span className="result-subtle">Premium guidance designed for faster iteration.</span>
-                  </div>
-                  <div className="result-toolbar-actions">
-                    <CopyToClipboard
-                      text={result}
-                      onCopy={() => toast.success("Review copied to clipboard!")}
-                    >
-                      <button className="review-action-btn copy-btn action-btn toolbar-btn">📋 Copy</button>
-                    </CopyToClipboard>
-
-                    <button
-                      className="review-action-btn action-btn secondary toolbar-btn"
-                      onClick={downloadPDF}
-                      disabled={result === defaultResult}
-                    >
-                      ⬇️ Download
-                    </button>
-                  </div>
-                </div>
-
-                {analysisData ? (
-                  <div className="result-grid">
-                    <div className="result-card accent-red">
-                      <div className="result-card-header">
-                        <span className="result-card-icon">🐞</span>
-                        <h4>Errors & Issues</h4>
-                      </div>
-                      <ul>
-                        {analysisData.errorsAndIssues.map((item, index) => (
-                          <li key={`errors-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="result-card accent-blue">
-                      <div className="result-card-header">
-                        <span className="result-card-icon">🚀</span>
-                        <h4>Improvements</h4>
-                      </div>
-                      <ul>
-                        {analysisData.improvements.map((item, index) => (
-                          <li key={`improvements-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="result-card accent-green">
-                      <div className="result-card-header">
-                        <span className="result-card-icon">✅</span>
-                        <h4>Best Practices</h4>
-                      </div>
-                      <ul>
-                        {analysisData.bestPractices.map((item, index) => (
-                          <li key={`best-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="result-card accent-orange">
-                      <div className="result-card-header">
-                        <span className="result-card-icon">🛡️</span>
-                        <h4>Security Suggestions</h4>
-                      </div>
-                      <ul>
-                        {securitySuggestions.map((item, index) => (
-                          <li key={`security-${index}`}>{item}</li>
-                        ))}
-                      </ul>
+                    <h4>Gemini AI is reviewing your code...</h4>
+                    <p>Scanning logic, structure, security, and quality signals in real time.</p>
+                    <div className="loading-progress" aria-hidden="true">
+                      <span className="loading-progress-bar" />
                     </div>
                   </div>
                 ) : (
-                  <div className="empty-result">
-                    <div className="empty-result-illustration">🤖</div>
-                    <h4>Ready for an AI review</h4>
-                    <p>Run an analysis to receive AI-powered code insights.</p>
-                  </div>
+                  <>
+                    <div className="result-header">
+                      <div className="result-header-top">
+                        <div>
+                          <p className="result-eyebrow">AI Review Results</p>
+                          <h3>Context-aware feedback tailored to your code</h3>
+                        </div>
+                        <div className="result-badges">
+                          <span className="result-badge score-badge">
+                            {analysisData ? `${qualityScoreDisplay}/10` : "—"}
+                          </span>
+                          <span className="result-badge complexity-badge">
+                            {analysisData ? analysisData.complexityLevel : "—"}
+                          </span>
+                          <span className="result-badge issue-badge">{bugsSummary} Bugs</span>
+                          <span className="result-badge suggestion-badge">{suggestionCount} Suggestions</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="result-toolbar">
+                      <div>
+                        <p className="result-label">Structured review insights</p>
+                        <span className="result-subtle">Premium guidance designed for faster iteration.</span>
+                      </div>
+                      <div className="result-toolbar-actions">
+                        <CopyToClipboard
+                          text={result}
+                          onCopy={() => toast.success("Review copied to clipboard!")}
+                        >
+                          <button className="review-action-btn copy-btn action-btn toolbar-btn">📋 Copy</button>
+                        </CopyToClipboard>
+
+                        <button
+                          className="review-action-btn action-btn secondary toolbar-btn"
+                          onClick={downloadPDF}
+                          disabled={result === defaultResult}
+                        >
+                          ⬇️ Download
+                        </button>
+                      </div>
+                    </div>
+
+                    {analysisData ? (
+                      <div className="result-grid">
+                        <div className="result-card accent-red">
+                          <div className="result-card-header">
+                            <span className="result-card-icon">🐞</span>
+                            <h4>Errors & Issues</h4>
+                          </div>
+                          <ul>
+                            {analysisData.errorsAndIssues.map((item, index) => (
+                              <li key={`errors-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="result-card accent-blue">
+                          <div className="result-card-header">
+                            <span className="result-card-icon">🚀</span>
+                            <h4>Improvements</h4>
+                          </div>
+                          <ul>
+                            {analysisData.improvements.map((item, index) => (
+                              <li key={`improvements-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="result-card accent-green">
+                          <div className="result-card-header">
+                            <span className="result-card-icon">✅</span>
+                            <h4>Best Practices</h4>
+                          </div>
+                          <ul>
+                            {analysisData.bestPractices.map((item, index) => (
+                              <li key={`best-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="result-card accent-orange">
+                          <div className="result-card-header">
+                            <span className="result-card-icon">🛡️</span>
+                            <h4>Security Suggestions</h4>
+                          </div>
+                          <ul>
+                            {securitySuggestions.map((item, index) => (
+                              <li key={`security-${index}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="empty-result">
+                        <div className="empty-result-illustration">🤖</div>
+                        <h4>Ready for an AI review</h4>
+                        <p>🤖 Paste or upload code to receive AI-powered review insights.</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
