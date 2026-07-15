@@ -444,7 +444,7 @@ input {
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .left,
@@ -452,6 +452,14 @@ input {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+}
+
+.left > .panel-card,
+.right > .panel-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .panel-card {
@@ -694,6 +702,8 @@ input {
 }
 
 .editor-shell {
+  flex: 1;
+  min-height: 0;
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -874,7 +884,7 @@ button:disabled,
   background: var(--surface-elevated);
   padding: 18px;
   border-radius: 24px;
-  min-height: 620px;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--border-color);
   transition: background 0.35s ease, border-color 0.35s ease;
@@ -912,36 +922,86 @@ button:disabled,
 .result-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   justify-content: flex-end;
+  align-items: stretch;
 }
 
 .result-badge {
-  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .score-badge {
-  color: #bfdbfe;
-  background: rgba(59, 130, 246, 0.16);
+  color: #f8fafc;
+  background: rgba(37, 99, 235, 0.18);
 }
 
-.complexity-badge {
-  color: #ddd6fe;
-  background: rgba(139, 92, 246, 0.16);
+.risk-badge {
+  color: #f8fafc;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.risk-safe {
+  color: #d1fae5;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.risk-low {
+  color: #d1fae5;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.risk-medium {
+  color: #fef3c7;
+  background: rgba(234, 179, 8, 0.16);
+}
+
+.risk-high {
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.16);
 }
 
 .issue-badge {
-  color: #fecaca;
+  color: #fed7aa;
   background: rgba(248, 113, 113, 0.16);
 }
 
 .suggestion-badge {
   color: #bbf7d0;
   background: rgba(16, 185, 129, 0.16);
+}
+
+@media (max-width: 720px) {
+  .result-badges {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .result-badge {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .result-badges {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .result-badge {
+    width: 100%;
+  }
 }
 
 .result-toolbar {

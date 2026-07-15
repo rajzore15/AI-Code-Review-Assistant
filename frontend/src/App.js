@@ -53,6 +53,8 @@ const buildAnalysisSections = (rawReview = "", selectedLanguage = "python", code
 
   return {
     language: (selectedLanguage || "python").toUpperCase(),
+    bugCount: issueMatches.length,
+    suggestionCount: suggestionMatches.length,
     bugsFound: issueMatches.slice(0, 3).length
       ? issueMatches.slice(0, 3)
       : ["No critical bugs detected in the provided snippet."],
@@ -73,6 +75,18 @@ const buildAnalysisSections = (rawReview = "", selectedLanguage = "python", code
       "Use consistent naming and documentation.",
     ],
   };
+};
+
+const getRiskLevel = (score) => {
+  if (score >= 85) {
+    return { emoji: "🟢", label: "Low Risk", className: "risk-low" };
+  }
+
+  if (score >= 70) {
+    return { emoji: "🟡", label: "Moderate Risk", className: "risk-medium" };
+  }
+
+  return { emoji: "🔴", label: "High Risk", className: "risk-high" };
 };
 
 const buildReviewText = (sections) => {
@@ -244,10 +258,12 @@ function App() {
     toast.success("History cleared!");
   };
 
-  const qualityScoreDisplay = analysisData ? (analysisData.qualityScore / 10).toFixed(1) : "0.0";
   const currentLanguageLabel = getLanguageLabel(language);
-  const bugsSummary = analysisData?.bugsFound?.length ? analysisData.bugsFound.length : 0;
-  const suggestionCount = analysisData?.suggestions?.length ? analysisData.suggestions.length : 0;
+  const qualityScoreDisplay = analysisData ? `⭐ ${(analysisData.qualityScore / 10).toFixed(1)}/10` : "⭐ N/A";
+  const riskInfo = analysisData ? getRiskLevel(analysisData.qualityScore) : { emoji: "🟢", label: "Safe", className: "risk-safe" };
+  const riskLevelDisplay = `${riskInfo.emoji} ${riskInfo.label}`;
+  const bugsSummary = analysisData?.bugCount ?? 0;
+  const suggestionCount = analysisData?.suggestionCount ?? 0;
   const securitySuggestions = analysisData
     ? [
         "Review secrets handling and credential exposure.",
@@ -403,7 +419,7 @@ function App() {
 
               <div className="editor-shell">
                 <Editor
-                  height="650px"
+                  height="100%"
                   language={language}
                   theme={darkMode ? "vs-dark" : "vs-light"}
                   value={code}
@@ -461,14 +477,10 @@ function App() {
                           <h3>Context-aware feedback tailored to your code</h3>
                         </div>
                         <div className="result-badges">
-                          <span className="result-badge score-badge">
-                            {analysisData ? `${qualityScoreDisplay}/10` : "—"}
-                          </span>
-                          <span className="result-badge complexity-badge">
-                            {analysisData ? analysisData.complexityLevel : "—"}
-                          </span>
-                          <span className="result-badge issue-badge">{bugsSummary} Bugs</span>
-                          <span className="result-badge suggestion-badge">{suggestionCount} Suggestions</span>
+                          <span className="result-badge score-badge">{qualityScoreDisplay}</span>
+                          <span className={`result-badge risk-badge ${riskInfo.className}`}>{riskLevelDisplay}</span>
+                          <span className="result-badge issue-badge">🐞 {bugsSummary} Bugs</span>
+                          <span className="result-badge suggestion-badge">💡 {suggestionCount} Suggestions</span>
                         </div>
                       </div>
                     </div>
