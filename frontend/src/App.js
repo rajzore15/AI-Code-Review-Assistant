@@ -159,7 +159,13 @@ function App() {
 
       toast.success("Analysis Completed!");
     } catch (error) {
-      setResult("❌ Unable to connect to the backend.");
+      console.log(error);
+
+      const errorMessage = error.response
+        ? JSON.stringify(error.response.data, null, 2)
+        : error.message;
+
+      setResult(errorMessage);
       setAnalysisData(null);
       toast.error("Backend Connection Failed!");
     } finally {
