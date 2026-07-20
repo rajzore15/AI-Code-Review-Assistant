@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Configure Gemini
+# Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel("gemini-2.5-flash")
@@ -18,10 +18,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://ai-code-review-assistant-jt0q6q830-zoreraj099-1287s-projects.vercel.app",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,9 +48,8 @@ You are an expert code reviewer.
 
 Language: {request.language}
 
-Review the following code.
+Review the following code and provide:
 
-Give:
 1. Errors
 2. Improvements
 3. Best Practices
@@ -62,7 +65,7 @@ Code:
         return {
             "language": request.language,
             "review": response.text,
-             "code_length": len(request.code)
+            "code_length": len(request.code)
         }
 
     except Exception as e:
