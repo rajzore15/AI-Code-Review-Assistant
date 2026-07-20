@@ -132,7 +132,7 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await axios.post("https://ai-code-review-assistant-12ra-ldsye6f4e.vercel.app/review", {
+      const response = await axios.post( "https://ai-code-review-assistant-12ra.vercel.app/review", {
         code: code,
         language: language,
       });
